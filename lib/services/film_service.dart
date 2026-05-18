@@ -2,29 +2,16 @@ import 'package:get/get.dart';
 
 class FilmService extends GetConnect {
 
-  final String baseUrl =
+  final String url =
       'https://68ff8dfbe02b16d1753e765d.mockapi.io/film';
 
-  // GET ALL FILM
   Future<Response> getFilms() async {
-    return await get(baseUrl);
-  }
 
-  // ADD FILM
-  Future<Response> addFilm(Map<String, dynamic> data) async {
-    return await post(baseUrl, data);
-  }
+    final response = await get(url);
 
-  // UPDATE FILM
-  Future<Response> updateFilm(
-      String id,
-      Map<String, dynamic> data,
-      ) async {
-    return await put('$baseUrl/$id', data);
-  }
+    print("STATUS : ${response.statusCode}");
+    print("BODY : ${response.body}");
 
-  // DELETE FILM
-  Future<Response> deleteFilm(String id) async {
-    return await delete('$baseUrl/$id');
+    return response;
   }
 }
