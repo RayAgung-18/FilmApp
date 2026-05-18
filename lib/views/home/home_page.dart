@@ -19,53 +19,102 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
       appBar: AppBar(
-        title: const Text('Movie App'),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.movie_filter_rounded, color: AppTheme.primaryColor, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text('Movie App'),
+          ],
+        ),
         actions: [
-          // Tombol Kaca Pembesar untuk berpindah ke halaman pencarian film
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => Get.to(() => const SearchMovieScreen()),
           ),
-          // Tombol Refresh untuk memuat ulang data langsung dari API dosen
-          IconButton(
-            onPressed: controller.fetchFilms, 
-            icon: const Icon(Icons.refresh),
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              onPressed: controller.fetchFilms,
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              tooltip: 'Refresh',
+            ),
           ),
         ],
       ),
       body: Obx(() {
-        // 1. Kondisi saat aplikasi baru dibuka, sedang loading, dan list film masih kosong
-        if (controller.isLoading.value && controller.filmList.isEmpty) return const LoadingAnimation();
-        
-        // 2. Kondisi jika terjadi error/gagal terhubung ke API dosen
-        if (controller.errorMessage.value.isNotEmpty) return _errorView(controller);
-        
-        // 3. Kondisi jika data berhasil diambil tapi ternyata memang tidak ada film di server
-        if (controller.filmList.isEmpty) return const EmptyState();
+        if (controller.isLoading.value && controller.filmList.isEmpty) {
+          return const LoadingAnimation();
+        }
+        if (controller.errorMessage.value.isNotEmpty) {
+          return _errorView(controller);
+        }
+        if (controller.filmList.isEmpty) {
+          return const EmptyState();
+        }
 
         // 4. Kondisi normal saat data film berhasil dimuat sepenuhnya
         return RefreshIndicator(
-          onRefresh: controller.fetchFilms, // Fitur geser ke bawah (pull to refresh)
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _crossAxisCount(context), // Jumlah kolom otomatis menyesuaikan ukuran layar
-                mainAxisExtent: 240, // Batasan tinggi maksimal untuk setiap kartu film
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 16,
+          onRefresh: controller.fetchFilms,
+          color: AppTheme.primaryColor,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${controller.filmList.length} Film',
+                        style: const TextStyle(
+                          color: AppTheme.textHint,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              itemCount: controller.filmList.length,
-              itemBuilder: (_, i) => MovieCard(film: controller.filmList[i], controller: controller),
-            ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 100),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: _crossAxisCount(context),
+                    mainAxisExtent: 245,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) => MovieCard(
+                      film: controller.filmList[i],
+                      controller: controller,
+                    ),
+                    childCount: controller.filmList.length,
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       }),
-      // Tombol melayang di kanan bawah untuk menambah film baru
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.to(() => const AddMovieScreen()),
         backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Tambah Film', style: TextStyle(fontWeight: FontWeight.w600)),
+        elevation: 4,
       ),
     );
   }
@@ -80,27 +129,43 @@ class HomePage extends StatelessWidget {
 
   // Komponen UI khusus yang muncul jika sistem mendeteksi adanya error
   Widget _errorView(FilmController controller) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: AppTheme.errorColor),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                controller.errorMessage.value, 
-                style: const TextStyle(color: AppTheme.errorColor), 
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.wifi_off_rounded, size: 48, color: AppTheme.errorColor),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Gagal memuat data',
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                controller.errorMessage.value,
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                 textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 24),
-            // Tombol untuk mencoba menembak ulang API server dosen
-            ElevatedButton.icon(
-              onPressed: controller.fetchFilms, 
-              icon: const Icon(Icons.refresh), 
-              label: const Text('Coba Lagi'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: controller.fetchFilms,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Coba Lagi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
