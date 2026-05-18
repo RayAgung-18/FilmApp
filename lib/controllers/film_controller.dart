@@ -10,19 +10,24 @@ class FilmController extends GetxController {
   var isLoading = false.obs;
   var errorMessage = ''.obs;
 
+  // 🔥 VARIABEL CADANGAN (SOLUSI DEBUGGING)
+  // Digunakan untuk menyimpan salinan data asli dari API dosen.
+  // Ini mencegah list film "habis" atau macet saat kamu menghapus huruf di kolom pencarian.
+  var _allFilmsBackup = <FilmModel>[];
+
   @override
   void onInit() {
     super.onInit();
     fetchFilms();
   }
 
-  // 📖 READ - FETCH ALL FILMS
+  // 📖 READ - MENGAMBIL SEMUA FILM DARI API
   Future<void> fetchFilms() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // 🔥 SEKARANG return Response, BUKAN langsung List
+      // Mengambil data dari server melalui service
       final response = await service.getFilms();
 
       print('Status code: ${response.statusCode}');
@@ -31,7 +36,6 @@ class FilmController extends GetxController {
       if (response.statusCode == 200) {
         final body = response.body;
 
-        // 🔥 body adalah List dari response
         if (body != null && body is List) {
           final List<dynamic> data = body;
           filmList.value = data
@@ -39,15 +43,21 @@ class FilmController extends GetxController {
                 try {
                   return FilmModel.fromJson(e);
                 } catch (e) {
-                  print('Error parsing film: $e');
+                  print('Gagal merubah data json ke model: $e');
                   return null;
                 }
               })
               .whereType<FilmModel>()
               .toList();
+          
+          // 🔥 SIMPAN SALINAN DATA ASLI
+          // Setiap kali berhasil mengambil data dari API, masukkan juga ke variabel cadangan
+          _allFilmsBackup = List.from(filmList);
+
           print('Berhasil memuat ${filmList.length} film');
         } else {
           filmList.value = [];
+          _allFilmsBackup = [];
         }
       } else {
         throw Exception('Gagal memuat film: ${response.statusCode}');
@@ -67,25 +77,29 @@ class FilmController extends GetxController {
     }
   }
 
-  // ✨ CREATE - TAMBAH FILM
+  // ✨ CREATE - TAMBAH FILM BARU
   Future<void> addFilm(FilmModel film) async {
     try {
       isLoading.value = true;
 
-      // 🔥 SEKARANG return Response
       final response = await service.addFilm(film.toJson());
       print('Add response status: ${response.statusCode}');
       print('Add response body: ${response.body}');
 
       if (response.statusCode == 201) {
         final body = response.body;
+        FilmModel newFilm;
 
         if (body != null && body is Map<String, dynamic>) {
-          final newFilm = FilmModel.fromJson(body);
-          filmList.insert(0, newFilm);
+          newFilm = FilmModel.fromJson(body);
         } else {
-          filmList.insert(0, film);
+          newFilm = film;
         }
+
+        // Masukkan data baru ke baris paling atas di list aktif
+        filmList.insert(0, newFilm);
+        // 🔥 Masukkan juga ke list cadangan agar film baru bisa ikut dicari langsung
+        _allFilmsBackup.insert(0, newFilm);
 
         if (Get.previousRoute.isNotEmpty) {
           Get.back();
@@ -116,31 +130,33 @@ class FilmController extends GetxController {
     }
   }
 
-  // ✏️ UPDATE - EDIT FILM
+  // ✏️ UPDATE - EDIT DATA FILM
   Future<void> updateFilm(String id, FilmModel film) async {
     try {
       isLoading.value = true;
 
-      // 🔥 SEKARANG return Response
       final response = await service.updateFilm(id, film.toJson());
       print('Update response status: ${response.statusCode}');
       print('Update response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final body = response.body;
+        FilmModel updatedFilm = film;
 
         if (body != null && body is Map<String, dynamic>) {
-          final updatedFilm = FilmModel.fromJson(body);
+          updatedFilm = FilmModel.fromJson(body);
+        }
 
-          final index = filmList.indexWhere((f) => f.id == id);
-          if (index != -1) {
-            filmList[index] = updatedFilm;
-          }
-        } else {
-          final index = filmList.indexWhere((f) => f.id == id);
-          if (index != -1) {
-            filmList[index] = film;
-          }
+        // Perbarui data pada list film yang sedang tampil aktif
+        final index = filmList.indexWhere((f) => f.id == id);
+        if (index != -1) {
+          filmList[index] = updatedFilm;
+        }
+
+        // 🔥 Perbarui juga data pada list cadangan master agar hasil pencarian sinkron
+        final backupIndex = _allFilmsBackup.indexWhere((f) => f.id == id);
+        if (backupIndex != -1) {
+          _allFilmsBackup[backupIndex] = updatedFilm;
         }
 
         if (Get.previousRoute.isNotEmpty) {
@@ -177,12 +193,14 @@ class FilmController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 🔥 SEKARANG return Response
       final response = await service.deleteFilm(id);
       print('Delete response status: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
+        // Hapus film dari daftar list aktif
         filmList.removeWhere((film) => film.id == id);
+        // 🔥 Hapus juga dari daftar cadangan master
+        _allFilmsBackup.removeWhere((film) => film.id == id);
 
         Get.snackbar(
           '🗑️ Sukses',
@@ -209,12 +227,14 @@ class FilmController extends GetxController {
     }
   }
 
-  // 🔍 SEARCH - CARI FILM
+  // 🔍 SEARCH - CARI FILM (VERSI FIX)
   void searchFilms(String query) {
     if (query.isEmpty) {
-      fetchFilms();
+      // 🔥 Jika kolom pencarian kosong, kembalikan isi list dari data cadangan asli tanpa hit API ulang
+      filmList.value = List.from(_allFilmsBackup);
     } else {
-      final filtered = filmList.where((film) {
+      // 🔥 Lakukan filter pencarian bersumber dari data cadangan master agar hasilnya selalu akurat
+      final filtered = _allFilmsBackup.where((film) {
         return film.judul.toLowerCase().contains(query.toLowerCase());
       }).toList();
       filmList.value = filtered;
