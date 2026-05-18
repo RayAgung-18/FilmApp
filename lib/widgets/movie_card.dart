@@ -33,7 +33,6 @@ class MovieCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: CachedNetworkImage(
@@ -42,20 +41,19 @@ class MovieCard extends StatelessWidget {
                 width: double.infinity,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(
-                  height: 180,
+                  height: 140,
                   color: AppTheme.surfaceColor,
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
                   ),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  height: 180,
+                  height: 140,
                   color: AppTheme.surfaceColor,
                   child: const Icon(Icons.broken_image, color: AppTheme.textHint),
                 ),
               ),
             ),
-            // Info film dengan padding lebih kecil
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               child: Column(
@@ -156,16 +154,26 @@ class MovieCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(film.ringkasan, style: const TextStyle(color: AppTheme.textSecondary, height: 1.4)),
                     const SizedBox(height: 20),
-                    if (film.urlTrailer.isNotEmpty)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => Get.to(() => TrailerPlayerScreen(url: film.urlTrailer)),
-                          icon: const Icon(Icons.play_circle),
-                          label: const Text('Putar Trailer'),
-                          style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+                    // Tombol trailer selalu tampil
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: film.urlTrailer.isNotEmpty
+                            ? () => Get.to(() => TrailerPlayerScreen(url: film.urlTrailer))
+                            : null,
+                        icon: const Icon(Icons.play_circle),
+                        label: Text(film.urlTrailer.isNotEmpty
+                            ? 'Putar Trailer'
+                            : 'Trailer Tidak Tersedia'),
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          foregroundColor: Colors.white,
+                          backgroundColor: film.urlTrailer.isNotEmpty
+                              ? AppTheme.primaryColor
+                              : AppTheme.textHint,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -238,6 +246,11 @@ class TrailerPlayerScreen extends StatelessWidget {
               onPressed: () => Get.snackbar('Info', 'Trailer akan diintegrasi anggota 3'),
               icon: const Icon(Icons.open_in_browser),
               label: const Text('Buka di Browser'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: AppTheme.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
             ),
           ],
         ),

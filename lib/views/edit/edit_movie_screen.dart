@@ -142,12 +142,19 @@ class _EditMovieScreenState extends State<EditMovieScreen> {
                         child: ElevatedButton(
                           onPressed:
                               _filmController.isLoading.value ? null : _update,
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: AppTheme.primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                           child: _filmController.isLoading.value
                               ? const SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                               : const Text('UPDATE FILM'),
                         ),
