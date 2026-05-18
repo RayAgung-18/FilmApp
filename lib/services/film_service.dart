@@ -1,83 +1,44 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:get/get.dart';
 
-class FilmService {
-  final String baseUrl = 'https://68ff8dfbe02b16d1753e765d.mockapi.io/film';
-
-  // GET ALL FILM - return List<dynamic>
-  Future<List<dynamic>> getFilms() async {
-    try {
-      final response = await http.get(Uri.parse(baseUrl));
-      print('GET status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Gagal memuat film: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error GET: $e');
-      throw Exception('Error: $e');
-    }
+class FilmService extends GetConnect {
+  @override
+  void onInit() {
+    super.onInit();
+    httpClient.timeout = const Duration(seconds: 30);
   }
 
-  // ADD FILM - return Map<String, dynamic>
-  Future<Map<String, dynamic>> addFilm(Map<String, dynamic> data) async {
-    try {
-      final response = await http.post(
-        Uri.parse(baseUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(data),
-      );
-      print('POST status: ${response.statusCode}');
-
-      if (response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Gagal menambah film: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error POST: $e');
-      throw Exception('Error: $e');
-    }
+  Future<Response> getFilms() async {
+    final response = await get(
+      'https://68ff8dfbe02b16d1753e765d.mockapi.io/film',
+    );
+    print("GET STATUS : ${response.statusCode}");
+    print("GET BODY : ${response.body}");
+    return response;
   }
 
-  // UPDATE FILM - return Map<String, dynamic>
-  Future<Map<String, dynamic>> updateFilm(
-    String id,
-    Map<String, dynamic> data,
-  ) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/$id'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(data),
-      );
-      print('PUT status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Gagal mengupdate film: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error PUT: $e');
-      throw Exception('Error: $e');
-    }
+  Future<Response> addFilm(Map<String, dynamic> data) async {
+    final response = await post(
+      'https://68ff8dfbe02b16d1753e765d.mockapi.io/film',
+      data,
+    );
+    print("POST STATUS : ${response.statusCode}");
+    return response;
   }
 
-  // DELETE FILM - return void
-  Future<void> deleteFilm(String id) async {
-    try {
-      final response = await http.delete(Uri.parse('$baseUrl/$id'));
-      print('DELETE status: ${response.statusCode}');
+  Future<Response> updateFilm(String id, Map<String, dynamic> data) async {
+    final response = await put(
+      'https://68ff8dfbe02b16d1753e765d.mockapi.io/film/$id',
+      data,
+    );
+    print("PUT STATUS : ${response.statusCode}");
+    return response;
+  }
 
-      if (response.statusCode != 200 && response.statusCode != 204) {
-        throw Exception('Gagal menghapus film: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error DELETE: $e');
-      throw Exception('Error: $e');
-    }
+  Future<Response> deleteFilm(String id) async {
+    final response = await delete(
+      'https://68ff8dfbe02b16d1753e765d.mockapi.io/film/$id',
+    );
+    print("DELETE STATUS : ${response.statusCode}");
+    return response;
   }
 }

@@ -22,25 +22,35 @@ class FilmController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // 🔥 http service langsung return List<dynamic>, BUKAN Response
-      final data = await service.getFilms();
-      print('Data fetched: ${data.length} films');
+      // 🔥 SEKARANG return Response, BUKAN langsung List
+      final response = await service.getFilms();
 
-      if (data.isNotEmpty) {
-        filmList.value = data
-            .map((e) {
-              try {
-                return FilmModel.fromJson(e);
-              } catch (e) {
-                print('Error parsing film: $e');
-                return null;
-              }
-            })
-            .whereType<FilmModel>()
-            .toList();
-        print('Berhasil memuat ${filmList.length} film');
+      print('Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final body = response.body;
+
+        // 🔥 body adalah List dari response
+        if (body != null && body is List) {
+          final List<dynamic> data = body;
+          filmList.value = data
+              .map((e) {
+                try {
+                  return FilmModel.fromJson(e);
+                } catch (e) {
+                  print('Error parsing film: $e');
+                  return null;
+                }
+              })
+              .whereType<FilmModel>()
+              .toList();
+          print('Berhasil memuat ${filmList.length} film');
+        } else {
+          filmList.value = [];
+        }
       } else {
-        filmList.value = [];
+        throw Exception('Gagal memuat film: ${response.statusCode}');
       }
     } catch (e) {
       errorMessage.value = e.toString();
@@ -62,29 +72,36 @@ class FilmController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 🔥 http service langsung return Map<String, dynamic>, BUKAN Response
-      final responseData = await service.addFilm(film.toJson());
-      print('Add response: $responseData');
+      // 🔥 SEKARANG return Response
+      final response = await service.addFilm(film.toJson());
+      print('Add response status: ${response.statusCode}');
+      print('Add response body: ${response.body}');
 
-      if (responseData.isNotEmpty) {
-        final newFilm = FilmModel.fromJson(responseData);
-        filmList.insert(0, newFilm);
+      if (response.statusCode == 201) {
+        final body = response.body;
+
+        if (body != null && body is Map<String, dynamic>) {
+          final newFilm = FilmModel.fromJson(body);
+          filmList.insert(0, newFilm);
+        } else {
+          filmList.insert(0, film);
+        }
+
+        if (Get.previousRoute.isNotEmpty) {
+          Get.back();
+        }
+
+        Get.snackbar(
+          '✨ Sukses',
+          'Film "${film.judul}" berhasil ditambahkan',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
       } else {
-        filmList.insert(0, film);
+        throw Exception('Gagal menambah film: ${response.statusCode}');
       }
-
-      if (Get.previousRoute.isNotEmpty) {
-        Get.back();
-      }
-
-      Get.snackbar(
-        '✨ Sukses',
-        'Film "${film.judul}" berhasil ditambahkan',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
     } catch (e) {
       print('Error addFilm: $e');
       Get.snackbar(
@@ -104,36 +121,43 @@ class FilmController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 🔥 http service langsung return Map<String, dynamic>, BUKAN Response
-      final responseData = await service.updateFilm(id, film.toJson());
-      print('Update response: $responseData');
+      // 🔥 SEKARANG return Response
+      final response = await service.updateFilm(id, film.toJson());
+      print('Update response status: ${response.statusCode}');
+      print('Update response body: ${response.body}');
 
-      if (responseData.isNotEmpty) {
-        final updatedFilm = FilmModel.fromJson(responseData);
+      if (response.statusCode == 200) {
+        final body = response.body;
 
-        final index = filmList.indexWhere((f) => f.id == id);
-        if (index != -1) {
-          filmList[index] = updatedFilm;
+        if (body != null && body is Map<String, dynamic>) {
+          final updatedFilm = FilmModel.fromJson(body);
+
+          final index = filmList.indexWhere((f) => f.id == id);
+          if (index != -1) {
+            filmList[index] = updatedFilm;
+          }
+        } else {
+          final index = filmList.indexWhere((f) => f.id == id);
+          if (index != -1) {
+            filmList[index] = film;
+          }
         }
+
+        if (Get.previousRoute.isNotEmpty) {
+          Get.back();
+        }
+
+        Get.snackbar(
+          '✏️ Sukses',
+          'Film berhasil diupdate',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.blue,
+          colorText: Colors.white,
+        );
       } else {
-        final index = filmList.indexWhere((f) => f.id == id);
-        if (index != -1) {
-          filmList[index] = film;
-        }
+        throw Exception('Gagal mengupdate film: ${response.statusCode}');
       }
-
-      if (Get.previousRoute.isNotEmpty) {
-        Get.back();
-      }
-
-      Get.snackbar(
-        '✏️ Sukses',
-        'Film berhasil diupdate',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.blue,
-        colorText: Colors.white,
-      );
     } catch (e) {
       print('Error updateFilm: $e');
       Get.snackbar(
@@ -153,20 +177,24 @@ class FilmController extends GetxController {
     try {
       isLoading.value = true;
 
-      // 🔥 http service delete tidak return apa-apa (void)
-      await service.deleteFilm(id);
-      print('Delete success for id: $id');
+      // 🔥 SEKARANG return Response
+      final response = await service.deleteFilm(id);
+      print('Delete response status: ${response.statusCode}');
 
-      filmList.removeWhere((film) => film.id == id);
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        filmList.removeWhere((film) => film.id == id);
 
-      Get.snackbar(
-        '🗑️ Sukses',
-        'Film berhasil dihapus',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-      );
+        Get.snackbar(
+          '🗑️ Sukses',
+          'Film berhasil dihapus',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+      } else {
+        throw Exception('Gagal menghapus film: ${response.statusCode}');
+      }
     } catch (e) {
       print('Error deleteFilm: $e');
       Get.snackbar(
