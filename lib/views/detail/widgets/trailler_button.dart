@@ -9,19 +9,54 @@ class TrailerButton extends StatelessWidget {
     required this.trailerUrl,
   });
 
-  Future<void> openTrailer() async {
+  Future<void> openTrailer(BuildContext context) async {
     try {
-      print("URL TRAILER: $trailerUrl");
+
+      // Cek jika URL kosong
+      if (trailerUrl.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trailer tidak tersedia'),
+          ),
+        );
+        return;
+      }
 
       final Uri url = Uri.parse(trailerUrl);
 
+      // Cek apakah URL valid
+      if (!url.hasScheme) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Link trailer tidak valid'),
+          ),
+        );
+        return;
+      }
+
+      // Buka trailer
       bool launched = await launchUrl(
         url,
         mode: LaunchMode.externalApplication,
       );
 
-      print("LAUNCHED: $launched");
+      // Jika gagal dibuka
+      if (!launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal membuka trailer'),
+          ),
+        );
+      }
+
     } catch (e) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Terjadi kesalahan saat membuka trailer'),
+        ),
+      );
+
       print("ERROR TRAILER: $e");
     }
   }
@@ -32,7 +67,7 @@ class TrailerButton extends StatelessWidget {
       width: double.infinity,
       height: 50,
       child: ElevatedButton.icon(
-        onPressed: openTrailer,
+        onPressed: () => openTrailer(context),
         icon: const Icon(Icons.play_arrow),
         label: const Text("Watch Trailer"),
       ),
