@@ -5,6 +5,7 @@ import '../../controllers/film_controller.dart';
 import '../../models/film_model.dart';
 import '../../theme/app_theme.dart';
 import '../../views/edit/edit_movie_screen.dart';
+import '../views/detail/widgets/trailler_button.dart';
 
 class MovieCard extends StatelessWidget {
   final FilmModel film;
@@ -341,34 +342,12 @@ class MovieCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Tombol trailer
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: film.urlTrailer.isNotEmpty
-                              ? () => Get.to(() => TrailerPlayerScreen(url: film.urlTrailer))
-                              : null,
-                          icon: Icon(
-                            film.urlTrailer.isNotEmpty
-                                ? Icons.play_circle_filled_rounded
-                                : Icons.play_disabled,
-                            size: 22,
-                          ),
-                          label: Text(
-                            film.urlTrailer.isNotEmpty ? 'Putar Trailer' : 'Trailer Tidak Tersedia',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            foregroundColor: Colors.white,
-                            backgroundColor: film.urlTrailer.isNotEmpty
-                                ? AppTheme.primaryColor
-                                : AppTheme.textHint,
-                            elevation: 0,
-                          ),
+                        // Tombol trailer
+                      
+                        TrailerButton(
+                          trailerUrl: film.urlTrailer,
                         ),
-                      ),
+                      
                       const SizedBox(height: 10),
                       // Tombol edit
                       Row(

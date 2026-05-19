@@ -103,7 +103,7 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
                     crossAxisCount: 2, // Menampilkan 2 kolom film sejajar
                     crossAxisSpacing: 14, // Jarak antar kolom kanan-kiri
                     mainAxisSpacing: 14, // Jarak antar baris atas-bawah
-                    childAspectRatio: 0.66, // Mengatur rasio proporsi tinggi-lebar kartu film
+                    childAspectRatio: 0.63, // Mengatur rasio proporsi tinggi-lebar kartu film
                   ),
                   itemBuilder: (context, index) {
                     final film = controller.filmList[index];
